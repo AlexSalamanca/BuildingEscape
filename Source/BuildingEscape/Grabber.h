@@ -30,6 +30,8 @@ protected:
 	void FindPhysicsComponent();
 	void SetupInputComponent();
 	const FHitResult ReturnFirstPhysicBody();
+	FVector GetReachLineEnd();
+	FVector GetReachLineStart();
 
 public:	
 	// Called every frame

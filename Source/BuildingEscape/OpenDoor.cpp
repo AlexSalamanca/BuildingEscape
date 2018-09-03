@@ -19,8 +19,15 @@ void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	plate_on = GetWorld()->GetFirstPlayerController()->GetPawn();
 	owner = GetOwner();
+
+	if (!pressure_plate) {
+		UE_LOG(LogTemp, Error, TEXT("No pressure plate found"))
+	}
+
+	if (!owner) {
+		UE_LOG(LogTemp, Error, TEXT("No ower plate found"))
+	}
 	
 }
 
@@ -29,25 +36,28 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (pressure_plate->IsOverlappingActor(plate_on)) {
-		OpenDoor();
-		time_door_open = GetWorld()->GetTimeSeconds();
+	if (GetTotalMassOfActorOnPlate() > trigger_mass) {
+		OnOpen.Broadcast();
+		owner->SetActorEnableCollision(false);
 	}
-
-	if (GetWorld()->GetTimeSeconds() - time_door_open > door_close_delay) {
-		CloseDoor();
+	else {
+		OnClose.Broadcast();
+		owner->SetActorEnableCollision(true);
 	}
 	
 }
 
-void UOpenDoor::OpenDoor()
-{
-	owner->SetActorRotation(FRotator(0.f, open_angle, 0.f));
-	owner->SetActorEnableCollision(false);
-}
+float UOpenDoor::GetTotalMassOfActorOnPlate() {
+	float total_mass = 0.f;
+	TArray<AActor*> overlapping_actors;
 
-void UOpenDoor::CloseDoor()
-{
-	owner->SetActorRotation(FRotator(0.f, 0.f, 0.f));
-	owner->SetActorEnableCollision(true);
+	if (!pressure_plate) { return total_mass; }
+
+	pressure_plate->GetOverlappingActors(OUT overlapping_actors);
+
+	for (const auto& actor : overlapping_actors) {
+		total_mass += actor->FindComponentByClass<UPrimitiveComponent>()->GetMass();
+	}
+
+	return total_mass;
 }
